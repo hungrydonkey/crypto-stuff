@@ -1,2 +1,2 @@
-# crypto-algorithm
-some cryptographic algorithms
+# some crypto things
+record some useful things

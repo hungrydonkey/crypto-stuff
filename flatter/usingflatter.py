@@ -1,6 +1,7 @@
 import subprocess
-
-flatter = ['flatter']
+import time
+import os
+import re
 
 def encode_matrix(lattice:list[list[int]]) -> str:
     rows = ['[' + ' '.join(map(str, row)) + ']' for row in lattice]
@@ -9,9 +10,10 @@ def encode_matrix(lattice:list[list[int]]) -> str:
 
 def decode_matrix(matrix_str: str) -> list[list[int]]:
     matrix = []
-    for row in matrix_str.strip()[1:-1].split('\n')[:-1]:
+    rows = re.findall(r'\[\s*([-]?\d+(?:\s+[-]?\d+)*)\s*\]', matrix_str)
+    for row in rows:
         matrix.append(
-            list(map(int,row[1:-1].split(" ")))
+            list(map(int, row.split()))
         )
     return matrix
 
@@ -40,26 +42,44 @@ def run_flatter(
     Returns:
         subprocess.CompletedProcess: Result of running the flatter command
     """
+    flatter = ['flatter']
+    if "flatter" not in os.environ['PATH']:
+        flatter = ['/root/tools/flatter/build/bin/flatter']
+
     args = flatter
     if verbose:
         args.append('-v')
     if quiet:
         args.append('-q')
     if alpha:
-        args += ['-a', f'{alpha}']
+        args += ['-alpha', f'{alpha}']
     if rhf:
-        args += ['-r', f'{rhf}']
+        args += ['-rhf', f'{rhf}']
     if delta:
-        args += ['-d', f'{delta}']
+        args += ['-delta', f'{delta}']
     if logcond:
-        args += ['-l', f'{logcond}']
+        args += ['-logcond', f'{logcond}']
 
 
     matrix = encode_matrix(lattice)
 
     # Run flatter command and return proc directly
+    print("Running flatter with args:", args)
+    start = time.time()
     ret = subprocess.check_output(args, input=matrix, text=True, )
+    end = time.time()
+    print(f"Flatter finished in {end - start:.2f} seconds")
     
     ret_matrix = decode_matrix(ret)
     return ret_matrix
-    
+
+if __name__ == "__main__":
+    lattice = [
+        [105, 821, 1234123123123],
+        [456, 789, 1011],
+        [1213, 1415, 1617]
+    ]
+    reduced_lattice = run_flatter(lattice, rhf = 1.02, verbose=True)
+    print("Reduced Lattice:")
+    for row in reduced_lattice:
+        print(row)
